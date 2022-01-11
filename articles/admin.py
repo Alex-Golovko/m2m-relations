@@ -1,39 +1,39 @@
 from django.contrib import admin
-
-from .models import Article, Scope, Data
-
 from django.core.exceptions import ValidationError
-
 from django.forms import BaseInlineFormSet
+from articles.models import Article, Scope,Tag
 
-
-class RelationshipInlineFormset(BaseInlineFormSet):
+class ScopeInlineFormset(BaseInlineFormSet):
     def clean(self):
 
-        counter = 0
+        main_counter = 0
         for form in self.forms:
-            if 'is_main' in form.cleaned_data:
+            try:
                 if form.cleaned_data['is_main']:
-                    counter += 1
-
-        if counter != 1:
-            raise ValidationError('Главный тэг может быть только один')
-
+                    main_counter += 1
+            except KeyError:
+                pass
+        if main_counter > 1:
+            raise ValidationError('Основной раздел может быть только один')
+        elif main_counter < 1:
+            raise ValidationError('Вы должны назначить хотя бы один основной раздел')
         return super().clean()
 
-
-class RelationshipInline(admin.TabularInline):
-    model = Data
-    formset = RelationshipInlineFormset
-
-
-@admin.register(Scope)
-class ObjectAdmin(admin.ModelAdmin):
-    pass
+class ScopeInline(admin.TabularInline):
+    model = Scope
+    extra = 3
+    formset = ScopeInlineFormset
 
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    inlines = [RelationshipInline]
+    list_display = ['id','title']
+    inlines = [ScopeInline]
+    pass
+
+
+@admin.register(Tag)
+class TagsAdmin(admin.ModelAdmin):
+    list_display = ['id','name',]
 
 
